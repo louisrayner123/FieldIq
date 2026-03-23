@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FieldIQ – Leaderboard</title>
+<link rel="stylesheet" href="/static/shared.css">
+<style>
+  .podium { display: flex; align-items: flex-end; justify-content: center; gap: 1.5rem; padding: 2rem 1rem 0; }
+  .podium-item { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; }
+  .podium-block {
+    width: 120px; border-radius: 8px 8px 0 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding: 1rem 0.75rem;
+    position: relative;
+  }
+  .podium-1 { height: 140px; background: linear-gradient(to top, #b8960a, #f0c93a); }
+  .podium-2 { height: 110px; background: linear-gradient(to top, #6b7280, #9ca3af); }
+  .podium-3 { height: 85px; background: linear-gradient(to top, #92400e, #d97706); }
+  .podium-rank { font-size: 1.6rem; position: absolute; top: -0.5rem; }
+  .podium-name { font-size: 0.78rem; font-weight: 700; text-align: center; color: var(--text); }
+  .podium-score { font-family: var(--mono); font-size: 1.2rem; font-weight: 500; color: var(--text); }
+  .podium-pos { font-size: 0.65rem; color: var(--text2); text-align: center; }
+
+  .lb-row {
+    display: grid;
+    grid-template-columns: 2.5rem 1fr 1fr 1fr 1fr 1fr 1fr 5rem;
+    align-items: center;
+    padding: 0.85rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+    gap: 0.5rem;
+  }
+  .lb-row:last-child { border-bottom: none; }
+  .lb-row:hover { background: var(--bg); }
+  .lb-head { font-size: 0.65rem; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; }
+  .lb-rank { font-family: var(--mono); font-size: 0.88rem; font-weight: 600; color: var(--text2); }
+  .lb-rank.r1 { color: #d4a017; }
+  .lb-rank.r2 { color: #888; }
+  .lb-rank.r3 { color: #c06010; }
+
+  .bar-cell { display: flex; align-items: center; gap: 0.5rem; }
+  .mini-bar { flex: 1; height: 4px; background: var(--surface2); border-radius: 99px; overflow: hidden; max-width: 60px; }
+  .mini-fill { height: 100%; border-radius: 99px; background: var(--green-mid); transition: width 1s; }
+
+  .cat-tabs { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .cat-tab { padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--surface); color: var(--text2); transition: all 0.15s; }
+  .cat-tab.active { background: var(--text); color: #fff; border-color: var(--text); }
+  .cat-tab:hover:not(.active) { border-color: var(--text); color: var(--text); }
+
+  .trend-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 3px; }
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">🏉</div>
+    <div><div class="logo-name">FieldIQ</div><span class="logo-tag">Rugby Performance AI</span></div>
+  </div>
+  <nav class="nav-section">
+    <div class="nav-label">Platform</div>
+    <a href="/" class="nav-item"><span class="ico">🏟️</span> Team Overview</a>
+    <a href="/profile.html" class="nav-item"><span class="ico">👤</span> Player Profile</a>
+    <a href="/analysis.html" class="nav-item"><span class="ico">🎬</span> Analysis Room</a>
+    <a href="/library.html" class="nav-item"><span class="ico">📁</span> Video Library</a>
+    <a href="/leaderboard.html" class="nav-item active"><span class="ico">🏆</span> Leaderboard</a>
+  </nav>
+  <div class="sidebar-bottom">
+    <div class="player-pill">
+      <div class="player-av av-1">JD</div>
+      <div><div class="player-pname">Jamie Davies</div><div class="player-ppos">Flanker · #7</div></div>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="page-title">Squad Leaderboard</div>
+      <div class="page-sub">Season 2025/26 rankings</div>
+    </div>
+    <div class="topbar-right">
+      <div class="cat-tabs" id="catTabs">
+        <button class="cat-tab active" onclick="setCategory('score',this)">Overall Score</button>
+        <button class="cat-tab" onclick="setCategory('tackles',this)">Tackles</button>
+        <button class="cat-tab" onclick="setCategory('meters',this)">Metres</button>
+        <button class="cat-tab" onclick="setCategory('passes',this)">Passes</button>
+        <button class="cat-tab" onclick="setCategory('offloads',this)">Offloads</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- PODIUM -->
+    <div class="card fade-up" style="padding:0 0 1.5rem;overflow:hidden;">
+      <div style="padding:1.2rem 1.4rem;border-bottom:1px solid var(--border);">
+        <div class="card-title" style="margin:0;" id="podiumTitle">Top 3 — Overall Performance</div>
+      </div>
+      <div class="podium" id="podium"></div>
+      <div style="height:1px;background:var(--border);margin:0 1.4rem;"></div>
+    </div>
+
+    <!-- FULL TABLE -->
+    <div class="card fade-up-2" style="padding:0;overflow:hidden;">
+      <div style="padding:1.1rem 1.4rem;border-bottom:1px solid var(--border);">
+        <div class="card-title" style="margin:0;" id="tableTitle">Full Rankings · Overall Score</div>
+      </div>
+      <div class="lb-row lb-head">
+        <div>#</div>
+        <div>Player</div>
+        <div id="col1h">Score</div>
+        <div>Tackles/g</div>
+        <div>Metres/g</div>
+        <div>Passes/g</div>
+        <div>Offloads/g</div>
+        <div>Minutes</div>
+      </div>
+      <div id="lbBody"></div>
+    </div>
+
+    <!-- CATEGORY LEADERS -->
+    <div class="three-col fade-up-3">
+      <div class="card">
+        <div class="card-head"><div class="card-title">🛡️ Defensive Leader</div></div>
+        <div id="defLeader"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">🏃 Attacking Leader</div></div>
+        <div id="attLeader"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">🏉 Distribution Leader</div></div>
+        <div id="distLeader"></div>
+      </div>
+    </div>
+
+  </div>
+</main>
+</div>
+
+<script src="/static/shared.js"></script>
+<script>
+const players = FieldIQ.getPlayers();
+const colours = ['av-1','av-2','av-3','av-4','av-5','av-6'];
+let category = 'score';
+
+const catMap = {
+  score: { key: 'avgScore', label: 'Overall Score', unit: '/100' },
+  tackles: { key: 'tackles', label: 'Tackles', unit: '/game' },
+  meters: { key: 'meters', label: 'Metres Carried', unit: 'm/game' },
+  passes: { key: 'passes', label: 'Passes', unit: '/game' },
+  offloads: { key: 'offloads', label: 'Offloads', unit: '/game' },
+};
+
+function setCategory(cat, btn) {
+  category = cat;
+  document.querySelectorAll('.cat-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+function render() {
+  const cat = catMap[category];
+  const sorted = [...players].sort((a,b) => b[cat.key] - a[cat.key]);
+  const maxVal = sorted[0][cat.key];
+
+  document.getElementById('podiumTitle').textContent = `Top 3 — ${cat.label}`;
+  document.getElementById('tableTitle').textContent = `Full Rankings · ${cat.label}`;
+  document.getElementById('col1h').textContent = cat.label;
+
+  // Podium (1st in middle, 2nd left, 3rd right)
+  const podiumOrder = [sorted[1], sorted[0], sorted[2]].filter(Boolean);
+  const heights = ['podium-2','podium-1','podium-3'];
+  const ranks = ['🥈','🥇','🥉'];
+  const podiumEl = document.getElementById('podium');
+  podiumEl.innerHTML = podiumOrder.map((p,i) => {
+    const ci = players.indexOf(p) % colours.length;
+    const rank = i === 1 ? 1 : i === 0 ? 2 : 3;
+    return `<div class="podium-item">
+      <div class="player-av ${colours[ci]}" style="width:2.8rem;height:2.8rem;font-size:1rem;border-radius:50%;">${FieldIQ.getInitials(p)}</div>
+      <div class="podium-name">${p.firstName}<br>${p.lastName}</div>
+      <div class="podium-block ${heights[i]}">
+        <div class="podium-rank">${ranks[i]}</div>
+        <div style="font-family:var(--mono);font-size:1.3rem;font-weight:600;color:#fff;">${p[cat.key]}</div>
+        <div style="font-size:0.65rem;color:rgba(255,255,255,0.7);">${cat.unit}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Full table
+  const lbEl = document.getElementById('lbBody');
+  lbEl.innerHTML = sorted.map((p, i) => {
+    const ci = players.indexOf(p) % colours.length;
+    const rank = i + 1;
+    const rankCls = rank <= 3 ? `r${rank}` : '';
+    const barPct = Math.round((p[cat.key] / maxVal) * 100);
+    const chip = p.avgScore >= 80 ? 'chip-green' : p.avgScore >= 65 ? 'chip-amber' : 'chip-red';
+    return `<div class="lb-row" style="cursor:pointer;" onclick="goProfile(${p.id})">
+      <div class="lb-rank ${rankCls}">${rank <= 3 ? ['🥇','🥈','🥉'][rank-1] : rank}</div>
+      <div style="display:flex;align-items:center;gap:0.65rem;">
+        <div class="player-av ${colours[ci]}" style="width:1.9rem;height:1.9rem;font-size:0.7rem;">${FieldIQ.getInitials(p)}</div>
+        <div>
+          <div style="font-weight:600;font-size:0.83rem;">${p.firstName} ${p.lastName}</div>
+          <div style="font-size:0.68rem;color:var(--text3);">${p.position}</div>
+        </div>
+      </div>
+      <div class="bar-cell">
+        <span style="font-family:var(--mono);font-size:0.85rem;font-weight:500;">${p[cat.key]}</span>
+        <div class="mini-bar"><div class="mini-fill" style="width:${barPct}%"></div></div>
+      </div>
+      <div style="font-family:var(--mono);font-size:0.82rem;">${p.tackles}</div>
+      <div style="font-family:var(--mono);font-size:0.82rem;">${p.meters}m</div>
+      <div style="font-family:var(--mono);font-size:0.82rem;">${p.passes}</div>
+      <div style="font-family:var(--mono);font-size:0.82rem;">${p.offloads}</div>
+      <div><span class="chip ${chip}">${p.minutesPlayed}'</span></div>
+    </div>`;
+  }).join('');
+
+  // Category leaders
+  const defP = [...players].sort((a,b)=>b.tackles-a.tackles)[0];
+  const attP = [...players].sort((a,b)=>b.meters-a.meters)[0];
+  const distP = [...players].sort((a,b)=>b.passes-a.passes)[0];
+
+  [
+    { el: 'defLeader', p: defP, stat: defP.tackles, unit: 'tackles/game' },
+    { el: 'attLeader', p: attP, stat: attP.meters + 'm', unit: 'metres/game' },
+    { el: 'distLeader', p: distP, stat: distP.passes, unit: 'passes/game' },
+  ].forEach(({el,p,stat,unit}) => {
+    const ci = players.indexOf(p) % colours.length;
+    document.getElementById(el).innerHTML = `
+      <div style="display:flex;align-items:center;gap:0.85rem;">
+        <div class="player-av ${colours[ci]}" style="width:2.8rem;height:2.8rem;font-size:1rem;">${FieldIQ.getInitials(p)}</div>
+        <div>
+          <div style="font-weight:700;font-size:0.9rem;">${p.firstName} ${p.lastName}</div>
+          <div style="font-size:0.72rem;color:var(--text2);">${p.position}</div>
+        </div>
+      </div>
+      <div style="margin-top:1rem;display:flex;align-items:baseline;gap:0.4rem;">
+        <span style="font-family:var(--mono);font-size:2rem;font-weight:500;color:var(--green);">${stat}</span>
+        <span style="font-size:0.72rem;color:var(--text3);">${unit}</span>
+      </div>
+    `;
+  });
+}
+
+function goProfile(id) {
+  FieldIQ.setCurrentPlayer(id);
+  window.location.href = 'profile.html';
+}
+
+render();
+</script>
+</body>
+</html>

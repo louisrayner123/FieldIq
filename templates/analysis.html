@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FieldIQ – Analysis Room</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;500;600;700;800&display=swap');
+:root {
+  --bg:#f6f6f3;--surface:#fff;--surface2:#efefeb;--border:#e2e2dc;
+  --text:#181815;--text2:#64645e;--text3:#9e9e97;
+  --green:#166b3f;--green-mid:#22a05a;--green-light:#e6f5ed;
+  --amber:#b86e0e;--amber-light:#fdf2e3;--red:#b83232;--red-light:#fdeaea;
+  --sidebar:#111110;--mono:'DM Mono',monospace;--sans:'Sora',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:14px;}
+.app{display:grid;grid-template-columns:220px 1fr;min-height:100vh;}
+/* SIDEBAR */
+.sidebar{background:var(--sidebar);padding:1.75rem 1.25rem;display:flex;flex-direction:column;gap:1.75rem;position:sticky;top:0;height:100vh;overflow-y:auto;}
+.logo{display:flex;align-items:center;gap:.65rem;padding-bottom:1.5rem;border-bottom:1px solid rgba(255,255,255,.07);}
+.logo-mark{width:2.2rem;height:2.2rem;background:var(--green-mid);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;}
+.logo-name{font-size:1.1rem;font-weight:800;color:#fff;letter-spacing:-.03em;}
+.logo-tag{display:block;font-size:.6rem;color:rgba(255,255,255,.3);font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;}
+.nav-label{font-size:.62rem;font-family:var(--mono);letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:.4rem;padding-left:.5rem;}
+.nav-item{display:flex;align-items:center;gap:.65rem;padding:.6rem .75rem;border-radius:7px;color:rgba(255,255,255,.45);cursor:pointer;font-size:.83rem;font-weight:500;text-decoration:none;transition:all .15s;margin-bottom:2px;}
+.nav-item:hover{background:rgba(255,255,255,.07);color:rgba(255,255,255,.85);}
+.nav-item.active{background:rgba(34,160,90,.18);color:#4dcc85;}
+.nav-item .ico{font-size:.95rem;width:1.1rem;text-align:center;}
+.sidebar-bottom{margin-top:auto;padding-top:1.5rem;border-top:1px solid rgba(255,255,255,.07);}
+.player-pill{display:flex;align-items:center;gap:.65rem;}
+.pav{width:2rem;height:2rem;border-radius:50%;background:var(--green-mid);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:#fff;}
+.pname{font-size:.82rem;font-weight:600;color:#fff;}
+.ppos{font-size:.68rem;color:rgba(255,255,255,.35);font-family:var(--mono);}
+/* MAIN */
+.main{display:flex;flex-direction:column;}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:1.1rem 2rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+.page-title{font-size:1.05rem;font-weight:700;letter-spacing:-.02em;}
+.page-sub{font-size:.73rem;color:var(--text2);margin-top:1px;}
+.content{padding:1.75rem 2rem;display:flex;flex-direction:column;gap:1.75rem;}
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.4rem;}
+.card-title{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:1.2rem;}
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:.45rem;padding:.6rem 1.25rem;border-radius:7px;font-family:var(--sans);font-size:.82rem;font-weight:600;cursor:pointer;border:none;transition:all .15s;text-decoration:none;}
+.btn-dark{background:var(--text);color:#fff;}
+.btn-dark:hover{background:#333;}
+.btn-green{background:var(--green);color:#fff;}
+.btn-green:hover{background:var(--green-mid);}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border);}
+.btn-ghost:hover{background:var(--surface2);}
+.btn-sm{padding:.4rem .85rem;font-size:.75rem;}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+/* CHIP */
+.chip{display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .6rem;border-radius:20px;font-size:.68rem;font-weight:600;font-family:var(--mono);}
+.chip-green{background:var(--green-light);color:var(--green);}
+.chip-amber{background:var(--amber-light);color:var(--amber);}
+.chip-red{background:var(--red-light);color:var(--red);}
+.chip-grey{background:var(--surface2);color:var(--text2);}
+/* FORMS */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;}
+.fg{display:flex;flex-direction:column;gap:.35rem;}
+.fg label{font-size:.68rem;font-weight:700;color:var(--text2);letter-spacing:.05em;text-transform:uppercase;}
+.fg input,.fg select,.fg textarea{padding:.6rem .85rem;border:1px solid var(--border);border-radius:7px;font-family:var(--sans);font-size:.85rem;background:var(--surface);color:var(--text);outline:none;transition:border-color .15s;}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--green-mid);}
+
+/* ── DROP ZONE ── */
+.drop-zone{border:2px dashed var(--border);border-radius:14px;background:var(--surface);padding:3.5rem 2rem;text-align:center;cursor:pointer;transition:all .2s;}
+.drop-zone:hover,.drop-zone.over{border-color:var(--green-mid);background:var(--green-light);}
+.dz-icon{font-size:3rem;margin-bottom:1rem;}
+.dz-title{font-size:1.2rem;font-weight:700;letter-spacing:-.02em;margin-bottom:.5rem;}
+.dz-sub{font-size:.85rem;color:var(--text2);line-height:1.6;margin-bottom:1.5rem;}
+
+/* ── CANVAS SELECTOR ── */
+.selector-wrap{display:none;flex-direction:column;gap:1rem;}
+.selector-wrap.show{display:flex;}
+.canvas-container{position:relative;border-radius:10px;overflow:hidden;border:1px solid var(--border);cursor:crosshair;background:#000;display:flex;align-items:center;justify-content:center;}
+.canvas-container canvas{display:block;max-width:100%;}
+#overlayCanvas{position:absolute;top:0;left:0;width:100%;height:100%;}
+.selector-hint{background:rgba(0,0,0,.75);color:#fff;font-size:.8rem;padding:.6rem 1rem;border-radius:6px;text-align:center;}
+
+/* ── LOADING ── */
+.loading-overlay{display:none;position:fixed;inset:0;background:rgba(246,246,243,.9);backdrop-filter:blur(6px);z-index:999;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;}
+.loading-overlay.show{display:flex;}
+.spinner{width:2.5rem;height:2.5rem;border:3px solid var(--border);border-top-color:var(--green-mid);border-radius:50%;animation:spin .75s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-msg{font-size:.88rem;font-weight:500;color:var(--text2);}
+.loading-step-txt{font-size:.75rem;color:var(--text3);font-family:var(--mono);}
+.progress-bar-wrap{width:280px;height:5px;background:var(--border);border-radius:99px;overflow:hidden;}
+.progress-bar-fill{height:100%;background:var(--green-mid);border-radius:99px;transition:width .4s;}
+
+/* ── STEP TRACKER ── */
+.steps-list{display:flex;flex-direction:column;gap:0;}
+.step-row{display:flex;align-items:center;gap:.85rem;padding:.55rem 0;border-bottom:1px solid var(--border);}
+.step-row:last-child{border-bottom:none;}
+.sdot{width:1.5rem;height:1.5rem;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.7rem;}
+.s-p{background:var(--surface2);color:var(--text3);border:1px solid var(--border);}
+.s-a{background:var(--green-light);color:var(--green);border:2px solid var(--green-mid);animation:pulse 1s infinite;}
+.s-d{background:var(--green);color:#fff;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.stxt{font-size:.8rem;color:var(--text2);}
+.stxt.done{color:var(--text);font-weight:500;}
+
+/* ── RESULTS ── */
+.results-section{display:none;}
+.results-section.show{display:contents;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;}
+.stat-grid-8{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;}
+.stat-box{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.25rem;transition:border-color .2s;position:relative;overflow:hidden;}
+.stat-box:hover{border-color:var(--green-mid);}
+.stat-box::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--green-mid);transform:scaleX(0);transition:transform .5s;transform-origin:left;}
+.stat-box.loaded::before{transform:scaleX(1);}
+.sb-ico{font-size:1.2rem;margin-bottom:.5rem;}
+.sb-lbl{font-size:.65rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.4rem;}
+.sb-val{font-family:var(--mono);font-size:2rem;font-weight:500;line-height:1;}
+.sb-unit{font-size:.7rem;color:var(--text3);margin-top:.2rem;}
+.sb-tag{display:inline-block;margin-top:.45rem;padding:.15rem .45rem;border-radius:4px;font-size:.68rem;font-family:var(--mono);}
+/* FEEDBACK */
+.ai-box{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.ai-head{padding:1rem 1.4rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.ai-label{display:flex;align-items:center;gap:.5rem;font-size:.72rem;font-weight:700;color:var(--green);font-family:var(--mono);letter-spacing:.06em;}
+.ai-dot{width:6px;height:6px;border-radius:50%;background:var(--green-mid);animation:pulse 2s infinite;}
+.ai-body{padding:1.4rem;font-size:.88rem;line-height:1.85;color:var(--text);}
+/* GOALS */
+.goal-row{display:flex;align-items:flex-start;gap:.85rem;padding:.85rem 0;border-bottom:1px solid var(--border);}
+.goal-row:last-child{border-bottom:none;}
+.goal-num{width:1.6rem;height:1.6rem;border-radius:50%;background:var(--green-light);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0;margin-top:2px;}
+.goal-ttl{font-size:.85rem;font-weight:700;margin-bottom:.2rem;}
+.goal-tgt{font-size:.78rem;color:var(--green);font-family:var(--mono);margin-bottom:.2rem;}
+.goal-why{font-size:.75rem;color:var(--text2);line-height:1.5;}
+/* PROGRESS */
+.prog-row{margin-bottom:.9rem;}
+.prog-hd{display:flex;justify-content:space-between;margin-bottom:.35rem;}
+.prog-label{font-size:.78rem;font-weight:500;}
+.prog-val{font-family:var(--mono);font-size:.75rem;color:var(--text2);}
+.prog-track{height:5px;background:var(--surface2);border-radius:99px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:99px;background:var(--green-mid);transition:width 1.2s cubic-bezier(.4,0,.2,1);}
+.prog-fill.amber{background:var(--amber);}
+.prog-fill.red{background:var(--red);}
+/* TYPING */
+.typing::after{content:'▌';animation:cur .8s step-end infinite;font-size:.9em;}
+@keyframes cur{0%,100%{opacity:1}50%{opacity:0}}
+@media(max-width:900px){.app{grid-template-columns:1fr;}.sidebar{display:none;}.stat-grid-8{grid-template-columns:repeat(2,1fr);}.two-col{grid-template-columns:1fr;}.form-grid{grid-template-columns:1fr;}.content{padding:1.25rem;}}
+</style>
+</head>
+<body>
+<div class="loading-overlay" id="loader">
+  <div class="spinner"></div>
+  <div class="loading-msg" id="lMsg">Uploading video…</div>
+  <div class="loading-step-txt" id="lStep">Please wait</div>
+  <div class="progress-bar-wrap"><div class="progress-bar-fill" id="lBar" style="width:0%"></div></div>
+</div>
+
+<div class="app">
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">🏉</div>
+    <div><div class="logo-name">FieldIQ</div><span class="logo-tag">Rugby Performance AI</span></div>
+  </div>
+  <nav>
+    <div class="nav-label">Platform</div>
+    <a href="/" class="nav-item"><span class="ico">🏟️</span> Team Overview</a>
+    <a href="/profile.html" class="nav-item"><span class="ico">👤</span> Player Profile</a>
+    <a href="/analysis.html" class="nav-item active"><span class="ico">🎬</span> Analysis Room</a>
+    <a href="/library.html" class="nav-item"><span class="ico">📁</span> Video Library</a>
+    <a href="/leaderboard.html" class="nav-item"><span class="ico">🏆</span> Leaderboard</a>
+  </nav>
+  <div class="sidebar-bottom">
+    <div class="player-pill">
+      <div class="pav" id="sbAv">P</div>
+      <div><div class="pname" id="sbName">Select Player</div><div class="ppos" id="sbPos">Fill in details →</div></div>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div>
+      <div class="page-title">Analysis Room</div>
+      <div class="page-sub">Upload your match video · Select yourself · Get your stats</div>
+    </div>
+    <div style="display:flex;gap:.75rem;align-items:center;">
+      <span class="chip chip-green" id="aiStatus">● AI Ready</span>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- STEP 1: UPLOAD + FORM -->
+    <div id="step1">
+      <div class="two-col" style="align-items:start;">
+
+        <!-- VIDEO DROP -->
+        <div style="display:flex;flex-direction:column;gap:1.25rem;">
+          <div class="drop-zone" id="dropZone"
+            onclick="document.getElementById('fileInput').click()"
+            ondragover="ev(event,'over')" ondragleave="ev(event,'leave')" ondrop="ev(event,'drop')">
+            <div class="dz-icon">🎬</div>
+            <div class="dz-title">Drop your match video here</div>
+            <div class="dz-sub">MP4 · MOV · AVI · up to 4 GB<br>Fixed camera angle recommended for best tracking</div>
+            <button class="btn btn-ghost" onclick="event.stopPropagation();document.getElementById('fileInput').click()">Browse File</button>
+            <input type="file" id="fileInput" style="display:none;" accept="video/*" onchange="onFileSelect(event)">
+          </div>
+
+          <div class="card" id="fileCard" style="display:none;">
+            <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
+              <span style="font-size:1.5rem;">🎬</span>
+              <div>
+                <div style="font-weight:700;font-size:.9rem;" id="fNameDisplay">—</div>
+                <div style="font-size:.72rem;color:var(--text3);font-family:var(--mono);" id="fSizeDisplay">—</div>
+              </div>
+              <button class="btn btn-ghost btn-sm" style="margin-left:auto;" onclick="clearVideo()">✕</button>
+            </div>
+            <div class="steps-list" id="stepsList"></div>
+          </div>
+        </div>
+
+        <!-- FORM -->
+        <div style="display:flex;flex-direction:column;gap:1rem;">
+          <div class="card">
+            <div class="card-title">Player Details</div>
+            <div class="form-grid">
+              <div class="fg"><label>First Name</label><input id="fFirst" placeholder="Jamie" oninput="updateSidebar()"></div>
+              <div class="fg"><label>Last Name</label><input id="fLast" placeholder="Davies" oninput="updateSidebar()"></div>
+              <div class="fg"><label>Position</label>
+                <select id="fPos">
+                  <option>Loosehead Prop</option><option>Hooker</option><option>Tighthead Prop</option>
+                  <option>Lock</option><option>Blindside Flanker</option><option selected>Openside Flanker</option>
+                  <option>Number 8</option><option>Scrum-Half</option><option>Fly-Half</option>
+                  <option>Inside Centre</option><option>Outside Centre</option><option>Wing</option><option>Full-Back</option>
+                </select>
+              </div>
+              <div class="fg"><label>Shirt #</label><input id="fNum" type="number" value="7" min="1" max="23"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Match Details</div>
+            <div class="form-grid">
+              <div class="fg"><label>Opposition</label><input id="fOpp" placeholder="e.g. Saracens RFC"></div>
+              <div class="fg"><label>Date</label><input id="fDate" type="date"></div>
+              <div class="fg"><label>Competition</label><input id="fComp" placeholder="e.g. National League 1"></div>
+              <div class="fg"><label>Result</label>
+                <select id="fResult"><option value="win">Win</option><option value="loss">Loss</option><option value="draw">Draw</option></select>
+              </div>
+              <div class="fg" style="grid-column:span 2;"><label>Score</label><input id="fScore" placeholder="e.g. 24–17"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Previous Goals (optional)</div>
+            <div class="fg"><label>Goals from last match</label><textarea id="fGoals" rows="2" placeholder="e.g. 12+ tackles, 40+ metres…" style="resize:vertical;"></textarea></div>
+          </div>
+          <button class="btn btn-green" id="uploadBtn" onclick="uploadVideo()" style="width:100%;justify-content:center;padding:.85rem;font-size:.9rem;" disabled>
+            📤 Upload Video & Continue
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2: PLAYER SELECTION -->
+    <div id="step2" style="display:none;">
+      <div class="card" style="max-width:900px;">
+        <div class="card-title">Step 2 of 3 — Select Your Player</div>
+        <div style="background:var(--green-light);border:1px solid var(--green-mid);border-radius:8px;padding:.85rem 1rem;margin-bottom:1.25rem;font-size:.85rem;color:var(--green);font-weight:500;">
+          📌 Draw a box around yourself in the first frame. The AI will track you throughout the entire match.
+        </div>
+        <div class="selector-wrap show" id="selectorWrap">
+          <div class="canvas-container" id="canvasContainer">
+            <canvas id="frameCanvas"></canvas>
+            <canvas id="overlayCanvas"
+              onmousedown="startDraw(event)"
+              onmousemove="doDraw(event)"
+              onmouseup="endDraw(event)"
+              ontouchstart="startDraw(event)"
+              ontouchmove="doDraw(event)"
+              ontouchend="endDraw(event)">
+            </canvas>
+          </div>
+          <div class="selector-hint" id="selectorHint">🖱️ Click and drag to draw a box around yourself</div>
+          <div style="display:flex;gap:.75rem;" id="selectionActions" style="display:none;">
+            <button class="btn btn-ghost" onclick="clearSelection()">↺ Redraw</button>
+            <button class="btn btn-green" id="confirmBtn" onclick="confirmSelection()" disabled style="flex:1;justify-content:center;">
+              ✓ Confirm Selection & Analyse
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3: PROCESSING -->
+    <div id="step3" style="display:none;">
+      <div class="card" style="max-width:600px;">
+        <div class="card-title">Step 3 of 3 — AI Analysis Running</div>
+        <div style="margin-bottom:1.25rem;">
+          <div style="font-size:.85rem;color:var(--text2);margin-bottom:1rem;">Your video is being processed. This typically takes 5–15 minutes depending on match length.</div>
+          <div class="steps-list" id="analysisStepper"></div>
+        </div>
+        <div class="progress-bar-wrap" style="width:100%;margin-top:.5rem;">
+          <div class="progress-bar-fill" id="analysisBar" style="width:0%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="results-section" id="resultsSection">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+        <div>
+          <div style="font-size:1rem;font-weight:700;" id="resultTitle">—</div>
+          <div style="font-size:.75rem;color:var(--text2);margin-top:2px;" id="resultSub">—</div>
+        </div>
+        <div style="display:flex;gap:.75rem;align-items:center;">
+          <span class="chip chip-green">✓ Analysis Complete</span>
+          <span class="chip chip-grey" id="trackingPoints">— tracking points</span>
+          <button class="btn btn-ghost btn-sm" onclick="location.reload()">+ New Analysis</button>
+        </div>
+      </div>
+
+      <div class="stat-grid-8" id="statGrid1"></div>
+      <div class="stat-grid-8" id="statGrid2"></div>
+
+      <div class="two-col" style="align-items:start;">
+        <div class="ai-box">
+          <div class="ai-head">
+            <div class="ai-label"><div class="ai-dot"></div> AI Performance Feedback</div>
+            <span class="chip chip-green" id="perfScore">—/100</span>
+          </div>
+          <div class="ai-body"><div id="feedbackText"></div></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:1.25rem;">
+          <div class="card" id="prevGoalCard" style="display:none;">
+            <div class="card-title">Previous Goal Review</div>
+            <div style="font-size:.85rem;line-height:1.75;color:var(--text2);" id="prevGoalText"></div>
+          </div>
+          <div class="ai-box">
+            <div class="ai-head"><div class="ai-label"><div class="ai-dot"></div> Next Match Goals</div></div>
+            <div class="ai-body" style="padding-bottom:.5rem;"><div id="nextGoals"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Stats vs Position Average</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;" id="progressBars"></div>
+      </div>
+    </div>
+
+  </div>
+</main>
+</div>
+
+<script>
+let videoId = null;
+let frameData = null;
+let bbox = null;
+let drawing = false;
+let startX, startY, currentX, currentY;
+let displayScale = 1;
+
+document.getElementById('fDate').valueAsDate = new Date();
+
+// ── SIDEBAR UPDATE ──
+function updateSidebar() {
+  const f = document.getElementById('fFirst').value || 'Player';
+  const l = document.getElementById('fLast').value || '';
+  const pos = document.getElementById('fPos').value;
+  document.getElementById('sbName').textContent = f + (l ? ' ' + l : '');
+  document.getElementById('sbPos').textContent = pos;
+  document.getElementById('sbAv').textContent = (f[0]||'') + (l[0]||'');
+}
+
+// ── FILE DRAG/DROP ──
+function ev(e, type) {
+  e.preventDefault();
+  const dz = document.getElementById('dropZone');
+  if (type === 'over') dz.classList.add('over');
+  else if (type === 'leave') dz.classList.remove('over');
+  else if (type === 'drop') {
+    dz.classList.remove('over');
+    const f = e.dataTransfer.files[0];
+    if (f) setFile(f);
+  }
+}
+
+function onFileSelect(e) { if (e.target.files[0]) setFile(e.target.files[0]); }
+function clearVideo() {
+  videoId = null;
+  document.getElementById('dropZone').style.display = '';
+  document.getElementById('fileCard').style.display = 'none';
+  document.getElementById('uploadBtn').disabled = true;
+}
+
+function setFile(file) {
+  document.getElementById('dropZone').style.display = 'none';
+  document.getElementById('fileCard').style.display = 'block';
+  document.getElementById('fNameDisplay').textContent = file.name;
+  const size = file.size > 1e9 ? (file.size/1e9).toFixed(2)+' GB' : (file.size/1e6).toFixed(1)+' MB';
+  document.getElementById('fSizeDisplay').textContent = size + ' · ' + file.name.split('.').pop().toUpperCase();
+  document.getElementById('stepsList').innerHTML = `
+    <div class="step-row"><div class="sdot s-d">✓</div><span class="stxt done">Video file selected</span></div>
+    <div class="step-row"><div class="sdot s-p">2</div><span class="stxt">Upload & extract first frame</span></div>
+    <div class="step-row"><div class="sdot s-p">3</div><span class="stxt">Select yourself on screen</span></div>
+    <div class="step-row"><div class="sdot s-p">4</div><span class="stxt">AI tracks & counts stats</span></div>
+  `;
+  document.getElementById('uploadBtn').disabled = false;
+  window._selectedFile = file;
+}
+
+// ── UPLOAD VIDEO ──
+async function uploadVideo() {
+  if (!window._selectedFile) return alert('Please select a video file first.');
+  const btn = document.getElementById('uploadBtn');
+  btn.disabled = true; btn.textContent = 'Uploading…';
+
+  const formData = new FormData();
+  formData.append('video', window._selectedFile);
+
+  showLoader('Uploading video…', 'This may take a moment for large files', 20);
+
+  try {
+    const res = await fetch('/api/upload', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    videoId = data.video_id;
+    frameData = data;
+    hideLoader();
+    showStep2(data);
+  } catch(e) {
+    hideLoader();
+    btn.disabled = false; btn.textContent = '📤 Upload Video & Continue';
+    alert('Upload failed: ' + e.message + '\n\nMake sure the server is running.');
+  }
+}
+
+// ── SHOW STEP 2: PLAYER SELECTION ──
+function showStep2(data) {
+  document.getElementById('step1').style.display = 'none';
+  document.getElementById('step2').style.display = 'block';
+
+  const canvas = document.getElementById('frameCanvas');
+  const overlay = document.getElementById('overlayCanvas');
+  const container = document.getElementById('canvasContainer');
+
+  const img = new Image();
+  img.onload = () => {
+    const maxW = Math.min(container.offsetWidth || 820, 820);
+    displayScale = maxW / img.width;
+    const dispW = maxW;
+    const dispH = img.height * displayScale;
+
+    canvas.width = dispW; canvas.height = dispH;
+    overlay.width = dispW; overlay.height = dispH;
+    canvas.style.width = dispW + 'px'; canvas.style.height = dispH + 'px';
+    overlay.style.width = dispW + 'px'; overlay.style.height = dispH + 'px';
+
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, dispW, dispH);
+  };
+  img.src = data.frame_url;
+}
+
+// ── CANVAS DRAW ──
+function getPos(e, canvas) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+}
+
+function startDraw(e) {
+  e.preventDefault();
+  const pos = getPos(e, document.getElementById('overlayCanvas'));
+  startX = pos.x; startY = pos.y;
+  drawing = true;
+  bbox = null;
+  document.getElementById('confirmBtn').disabled = true;
+}
+
+function doDraw(e) {
+  if (!drawing) return;
+  e.preventDefault();
+  const pos = getPos(e, document.getElementById('overlayCanvas'));
+  currentX = pos.x; currentY = pos.y;
+
+  const overlay = document.getElementById('overlayCanvas');
+  const ctx = overlay.getContext('2d');
+  ctx.clearRect(0, 0, overlay.width, overlay.height);
+
+  const x = Math.min(startX, currentX);
+  const y = Math.min(startY, currentY);
+  const w = Math.abs(currentX - startX);
+  const h = Math.abs(currentY - startY);
+
+  ctx.strokeStyle = '#22a05a';
+  ctx.lineWidth = 2.5;
+  ctx.setLineDash([6, 3]);
+  ctx.strokeRect(x, y, w, h);
+  ctx.fillStyle = 'rgba(34,160,90,0.08)';
+  ctx.fillRect(x, y, w, h);
+
+  // Corner handles
+  ctx.fillStyle = '#22a05a';
+  ctx.setLineDash([]);
+  [[x,y],[x+w,y],[x,y+h],[x+w,y+h]].forEach(([cx,cy]) => {
+    ctx.fillRect(cx-4, cy-4, 8, 8);
+  });
+
+  // Label
+  ctx.fillStyle = '#22a05a';
+  ctx.font = '600 11px Sora, sans-serif';
+  ctx.fillText('YOU', x + 4, y - 6);
+}
+
+function endDraw(e) {
+  if (!drawing) return;
+  drawing = false;
+  const w = Math.abs(currentX - startX);
+  const h = Math.abs(currentY - startY);
+  if (w > 20 && h > 30) {
+    // Convert back to original video coords
+    bbox = {
+      x: Math.round(Math.min(startX, currentX) / displayScale),
+      y: Math.round(Math.min(startY, currentY) / displayScale),
+      w: Math.round(w / displayScale),
+      h: Math.round(h / displayScale)
+    };
+    document.getElementById('selectorHint').textContent = '✓ Player selected — confirm below or redraw';
+    document.getElementById('confirmBtn').disabled = false;
+    document.getElementById('selectionActions').style.display = 'flex';
+  }
+}
+
+function clearSelection() {
+  bbox = null;
+  const overlay = document.getElementById('overlayCanvas');
+  overlay.getContext('2d').clearRect(0, 0, overlay.width, overlay.height);
+  document.getElementById('selectorHint').textContent = '🖱️ Click and drag to draw a box around yourself';
+  document.getElementById('confirmBtn').disabled = true;
+}
+
+// ── CONFIRM + RUN ANALYSIS ──
+async function confirmSelection() {
+  if (!bbox || !videoId) return;
+  document.getElementById('step2').style.display = 'none';
+  document.getElementById('step3').style.display = 'block';
+
+  const steps = [
+    { label: 'Initialising tracker on selected player', pct: 8 },
+    { label: 'Scanning video frames', pct: 20 },
+    { label: 'Tracking player movement', pct: 45 },
+    { label: 'Detecting tackles & contacts', pct: 60 },
+    { label: 'Counting carries & passes', pct: 72 },
+    { label: 'Measuring metres gained', pct: 83 },
+    { label: 'Calculating post-contact metres', pct: 91 },
+    { label: 'Generating AI feedback & goals', pct: 98 },
+  ];
+
+  const stepper = document.getElementById('analysisStepper');
+  stepper.innerHTML = steps.map((s,i) => `
+    <div class="step-row" id="as${i}">
+      <div class="sdot s-p" id="asdot${i}">${i+1}</div>
+      <span class="stxt" id="astxt${i}">${s.label}</span>
+    </div>
+  `).join('');
+
+  // Animate steps while API runs
+  let stepIdx = 0;
+  const stepTimer = setInterval(() => {
+    if (stepIdx > 0) {
+      document.getElementById(`asdot${stepIdx-1}`).className = 'sdot s-d';
+      document.getElementById(`asdot${stepIdx-1}`).textContent = '✓';
+      document.getElementById(`astxt${stepIdx-1}`).classList.add('done');
+    }
+    if (stepIdx < steps.length) {
+      document.getElementById(`asdot${stepIdx}`).className = 'sdot s-a';
+      document.getElementById(`asdot${stepIdx}`).textContent = '';
+      document.getElementById('analysisBar').style.width = steps[stepIdx].pct + '%';
+      stepIdx++;
+    }
+  }, 3500);
+
+  try {
+    const res = await fetch('/api/analyse', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        video_id: videoId,
+        bbox: bbox,
+        player_info: {
+          firstName: document.getElementById('fFirst').value,
+          lastName: document.getElementById('fLast').value,
+          position: document.getElementById('fPos').value,
+          number: document.getElementById('fNum').value
+        },
+        prev_goals: document.getElementById('fGoals').value
+      })
+    });
+
+    const data = await res.json();
+    clearInterval(stepTimer);
+
+    // Mark all done
+    steps.forEach((_,i) => {
+      document.getElementById(`asdot${i}`).className = 'sdot s-d';
+      document.getElementById(`asdot${i}`).textContent = '✓';
+      document.getElementById(`astxt${i}`).classList.add('done');
+    });
+    document.getElementById('analysisBar').style.width = '100%';
+
+    await delay(600);
+    document.getElementById('step3').style.display = 'none';
+
+    if (data.error) throw new Error(data.error);
+    renderResults(data);
+
+  } catch(e) {
+    clearInterval(stepTimer);
+    document.getElementById('step3').innerHTML = `
+      <div class="card" style="max-width:500px;">
+        <div style="color:var(--red);font-weight:600;margin-bottom:.5rem;">Analysis failed</div>
+        <div style="font-size:.85rem;color:var(--text2);">${e.message}</div>
+        <button class="btn btn-ghost" style="margin-top:1rem;" onclick="location.reload()">Try Again</button>
+      </div>`;
+  }
+}
+
+// ── RENDER RESULTS ──
+function renderResults(data) {
+  const s = data.stats;
+  const fb = data.feedback;
+
+  document.getElementById('resultsSection').classList.add('show');
+  document.getElementById('resultTitle').textContent = `vs ${document.getElementById('fOpp').value || 'Opposition'}`;
+  document.getElementById('resultSub').textContent =
+    `${document.getElementById('fComp').value||'Match'} · ${document.getElementById('fDate').value} · ${document.getElementById('fResult').value.toUpperCase()} ${document.getElementById('fScore').value||''}`;
+  document.getElementById('perfScore').textContent = s.performanceScore + '/100';
+  document.getElementById('trackingPoints').textContent = (s.trackingPoints||0).toLocaleString() + ' tracking points';
+
+  const tackleRate = Math.round((s.tackles / Math.max(s.tackleAttempts,1)) * 100);
+  const carryAvg = s.carries > 0 ? (s.metersCarried / s.carries).toFixed(1) : 0;
+
+  const grid1 = [
+    { ico:'🛡️', lbl:'Tackles Made', val:s.tackles, unit:`of ${s.tackleAttempts} attempts`, tag:`${tackleRate}% success`, tagCls: tackleRate>=85?'chip-green':'chip-amber' },
+    { ico:'🏃', lbl:'Metres Ran', val:s.metersRan+'m', unit:'total distance', tag:'GPS tracked', tagCls:'chip-grey' },
+    { ico:'🏉', lbl:'Metres Carried', val:s.metersCarried+'m', unit:`${s.carries} carries`, tag:`${carryAvg}m per carry`, tagCls:'chip-grey' },
+    { ico:'💥', lbl:'Post-Contact', val:s.metersPostContact+'m', unit:'after contact', tag: s.metersPostContact > s.metersCarried*.3 ? 'Strong' : 'Improve', tagCls: s.metersPostContact > s.metersCarried*.3 ? 'chip-green' : 'chip-amber' },
+  ];
+  const grid2 = [
+    { ico:'🤝', lbl:'Offloads', val:s.offloads, unit:'clean offloads', tag: s.offloads>=3?'Above avg':'Below avg', tagCls:s.offloads>=3?'chip-green':'chip-amber' },
+    { ico:'↔️', lbl:'Passes', val:s.passes, unit:'passes completed', tag:'Detected', tagCls:'chip-grey' },
+    { ico:'👟', lbl:'Kicking Metres', val:s.kickingMeters+'m', unit:'total kick distance', tag:'Tracked', tagCls:'chip-grey' },
+    { ico:'⭐', lbl:'Performance', val:s.performanceScore, unit:'out of 100', tag: s.performanceScore>=75?'Above Avg':s.performanceScore>=55?'Average':'Below Avg', tagCls:s.performanceScore>=75?'chip-green':s.performanceScore>=55?'chip-amber':'chip-red' },
+  ];
+
+  document.getElementById('statGrid1').innerHTML = grid1.map(b => `
+    <div class="stat-box loaded">
+      <div class="sb-ico">${b.ico}</div><div class="sb-lbl">${b.lbl}</div>
+      <div class="sb-val">${b.val}</div><div class="sb-unit">${b.unit}</div>
+      <span class="sb-tag chip ${b.tagCls}">${b.tag}</span>
+    </div>`).join('');
+  document.getElementById('statGrid2').innerHTML = grid2.map(b => `
+    <div class="stat-box loaded">
+      <div class="sb-ico">${b.ico}</div><div class="sb-lbl">${b.lbl}</div>
+      <div class="sb-val">${b.val}</div><div class="sb-unit">${b.unit}</div>
+      <span class="sb-tag chip ${b.tagCls}">${b.tag}</span>
+    </div>`).join('');
+
+  typeText(document.getElementById('feedbackText'), fb.text);
+
+  if (fb.prevGoalReview && document.getElementById('fGoals').value) {
+    document.getElementById('prevGoalCard').style.display = 'block';
+    document.getElementById('prevGoalText').textContent = fb.prevGoalReview;
+  }
+
+  document.getElementById('nextGoals').innerHTML = (fb.nextGoals||[]).map((g,i) => `
+    <div class="goal-row">
+      <div class="goal-num">${i+1}</div>
+      <div>
+        <div class="goal-ttl">${g.title}</div>
+        <div class="goal-tgt">→ ${g.target}</div>
+        <div class="goal-why">${g.reason}</div>
+      </div>
+    </div>`).join('');
+
+  const avgs = { tackles:9, metersCarried:45, metersPostContact:16, passes:20, offloads:2.5, kickingMeters:30 };
+  document.getElementById('progressBars').innerHTML = [
+    { label:'Tackles', val:s.tackles, avg:avgs.tackles },
+    { label:'Metres Carried', val:s.metersCarried, avg:avgs.metersCarried, unit:'m' },
+    { label:'Post-Contact Metres', val:s.metersPostContact, avg:avgs.metersPostContact, unit:'m' },
+    { label:'Passes', val:s.passes, avg:avgs.passes },
+    { label:'Offloads', val:s.offloads, avg:avgs.offloads },
+    { label:'Kicking Metres', val:s.kickingMeters, avg:avgs.kickingMeters, unit:'m' },
+  ].map(p => {
+    const max = Math.max(p.val, p.avg)*1.4||1;
+    const pct = Math.min(100, Math.round((p.val/max)*100));
+    const cls = p.val>=p.avg?'':'  amber';
+    return `<div class="prog-row">
+      <div class="prog-hd"><span class="prog-label">${p.label}</span><span class="prog-val">${p.val}${p.unit||''} / avg ${p.avg}${p.unit||''}</span></div>
+      <div class="prog-track"><div class="prog-fill${cls}" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('resultsSection').scrollIntoView({behavior:'smooth'});
+}
+
+// ── HELPERS ──
+function showLoader(msg, step, pct) {
+  document.getElementById('lMsg').textContent = msg;
+  document.getElementById('lStep').textContent = step;
+  document.getElementById('lBar').style.width = pct + '%';
+  document.getElementById('loader').classList.add('show');
+}
+function hideLoader() { document.getElementById('loader').classList.remove('show'); }
+function delay(ms) { return new Promise(r=>setTimeout(r,ms)); }
+function typeText(el, text, speed=10) {
+  let i=0; el.textContent=''; el.classList.add('typing');
+  const iv=setInterval(()=>{ if(i<text.length){el.textContent+=text[i++];}else{el.classList.remove('typing');clearInterval(iv);} },speed);
+}
+</script>
+</body>
+</html>
